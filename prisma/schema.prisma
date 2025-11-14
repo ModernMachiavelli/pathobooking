@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String         @id @default(cuid())
+  email     String         @unique
+  createdAt DateTime       @default(now())
+  role      Role           @default(PATIENT)
+  doctor    DoctorProfile?
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  MOD
+}
+
+model DoctorProfile {
+  id           String            @id @default(cuid())
+  userId       String            @unique
+  user         User              @relation(fields: [userId], references: [id])
+  fullName     String
+  about        String?
+  specialties  DoctorSpecialty[]
+  lat          Float
+  lng          Float
+  city         String
+  region       String
+  experienceY  Int               @default(0)
+  rating       Float             @default(0)
+  casesHandled Int               @default(0)
+  createdAt    DateTime          @default(now())
+}
+
+model Specialty {
+  id    String            @id @default(cuid())
+  code  String            @unique
+  title String
+  docs  DoctorSpecialty[]
+}
+
+model DoctorSpecialty {
+  doctorId    String
+  specialtyId String
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id])
+  specialty   Specialty     @relation(fields: [specialtyId], references: [id])
+
+  @@id([doctorId, specialtyId])
+}
+
+model QuestionnaireVersion {
+  id        String   @id @default(cuid())
+  version   Int      @unique
+  createdAt DateTime @default(now())
+  json      Json
+}
+
+model Case {
+  id                     String   @id @default(cuid())
+  userId                 String
+  questionnaireVersionId String
+  answersJson            Json
+  lat                    Float?
+  lng                    Float?
+  derivedTags            String[]
+  createdAt              DateTime @default(now())
+}
