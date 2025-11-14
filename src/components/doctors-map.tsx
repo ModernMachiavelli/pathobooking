@@ -32,9 +32,8 @@ export function DoctorsMap({ doctors }: DoctorsMapProps) {
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style:
-        // TODO: постав свій ключ MapTiler або інший стиль
-        'https://api.maptiler.com/maps/streets/style.json?key=YOUR_MAPTILER_KEY',
+      // DEMO-стиль, який працює без ключа
+      style: 'https://demotiles.maplibre.org/style.json',
       center: initialCenter,
       zoom: 5,
     });
@@ -49,13 +48,10 @@ export function DoctorsMap({ doctors }: DoctorsMapProps) {
     };
   }, []);
 
-  // Додаємо маркери, коли є карта і лікарі
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // При кожній зміні списку лікарів прибираємо старі маркери
-    // Хак: зберігати маркери в window, щоб мати до них доступ
     const w = window as any;
     if (!w.__doctorMarkers) {
       w.__doctorMarkers = [];
@@ -92,7 +88,6 @@ export function DoctorsMap({ doctors }: DoctorsMapProps) {
       w.__doctorMarkers.push(marker);
     });
 
-    // Якщо є хоча б 1 лікар з координатами — піджимаємо карту під їх bbox
     if (validDoctors.length > 0) {
       const bounds = new maplibregl.LngLatBounds();
       validDoctors.forEach((doc) => {
@@ -103,7 +98,7 @@ export function DoctorsMap({ doctors }: DoctorsMapProps) {
   }, [doctors]);
 
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden border border-border">
+    <div className="w-full h-full rounded-xl overflow-hidden border border-border bg-slate-100">
       <div ref={mapContainerRef} className="w-full h-full" />
     </div>
   );
