@@ -1,62 +1,96 @@
+// src/components/DoctorMap.tsx
 "use client";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useRef } from "react";
 
-const styleUrl = process.env.NEXT_PUBLIC_MAP_STYLE_URL!;
+import { useEffect, useState } from "react";
+import { DoctorsMap } from "@/components/doctors-map";
+import { DoctorCard } from "@/components/doctor-card";
 
-const MOCK_DOCTORS = [
-  { id: "1", name: "д-р Іваненко", lat: 50.45, lng: 30.52, city: "Київ", tags: ["breast","he"] },
-  { id: "2", name: "д-р Коваль",   lat: 49.84, lng: 24.03, city: "Львів", tags: ["gi","ihc"] },
-  { id: "3", name: "д-р Шевченко", lat: 46.48, lng: 30.72, city: "Одеса", tags: ["derm","biopsy"] },
-];
+type DoctorFromApi = {
+  id: string;
+  fullName: string;
+  lat: number | null;
+  lng: number | null;
+  city: string;
+  region: string;
+  specialization: string;
+  subSpecialization?: string | null;
+  clinicName?: string | null;
+  description?: string | null;
+  isTelepathologyAvailable: boolean;
+  isAcceptingNewPatients: boolean;
+  yearsOfExperience?: number | null;
+  avatarUrl?: string | null;
+};
 
 export default function DoctorMap() {
-  const mapRef = useRef<maplibregl.Map|null>(null);
-  const divRef = useRef<HTMLDivElement|null>(null);
+  const [doctors, setDoctors] = useState<DoctorFromApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (mapRef.current || !divRef.current) return;
-    const map = new maplibregl.Map({
-      container: divRef.current,
-      style: styleUrl,
-      center: [31.1656, 48.3794],
-      zoom: 5
-    });
+    async function load() {
+      try {
+        const res = await fetch("/api/doctors");
+        if (!res.ok) throw new Error("Не вдалося завантажити лікарів");
+        const data = await res.json();
+        setDoctors(data);
+      } catch (e: any) {
+        setError(e.message ?? "Помилка завантаження");
+      } finally {
+        setLoading(false);
+      }
+    }
 
-    map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
-
-    map.on("load", () => {
-      const features = MOCK_DOCTORS.map(d => ({
-        type: "Feature",
-        geometry: { type: "Point", coordinates: [d.lng, d.lat] },
-        properties: { id: d.id, name: d.name, city: d.city, tags: d.tags.join(", ") }
-      }));
-
-      map.addSource("doctors", { type: "geojson", data: { type: "FeatureCollection", features } });
-      map.addLayer({
-        id: "doctor-points",
-        type: "circle",
-        source: "doctors",
-        paint: { "circle-radius": 6, "circle-stroke-width": 1, "circle-stroke-color": "#111", "circle-color": "#2dd4bf" }
-      });
-
-      const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true });
-      map.on("click", "doctor-points", (e) => {
-        const f = e.features?.[0];
-        const p = f?.properties as any;
-        const [x,y] = (f!.geometry as any).coordinates;
-        popup.setLngLat([x,y]).setHTML(`<strong>${p.name}</strong><br/>${p.city}<br/><small>${p.tags}</small>`).addTo(map);
-      });
-
-      map.on("mouseenter", "doctor-points", () => map.getCanvas().style.cursor = "pointer");
-      map.on("mouseleave", "doctor-points", () => map.getCanvas().style.cursor = "");
-    });
-
-    mapRef.current = map;
-
-    return () => { map.remove(); mapRef.current = null; };
+    load();
   }, []);
 
-  return <div ref={divRef} className="w-full h-[70dvh] rounded-xl overflow-hidden border"/>;
+  if (loading) {
+    return (
+      <div className="mt-4 flex h-[420px] items-center justify-center text-sm text-slate-500">
+        Завантаження карти лікарів...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mt-4 flex h-[420px] items-center justify-center text-sm text-red-600">
+        Помилка: {error}
+      </div>
+    );
+  }
+
+  if (!doctors.length) {
+    return (
+      <div className="mt-4 flex h-[420px] items-center justify-center text-sm text-slate-500">
+        Поки немає лікарів для відображення
+      </div>
+    );
+  }
+
+  const mapDoctors = doctors.map((doc) => ({
+    id: doc.id,
+    fullName: doc.fullName,
+    lat: doc.lat,
+    lng: doc.lng,
+    city: doc.city,
+    region: doc.region,
+    specialization: doc.specialization,
+  }));
+
+  return (
+    <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      {/* Ліва колонка — карта */}
+      <div className="min-h-[420px]">
+        <DoctorsMap doctors={mapDoctors} />
+      </div>
+
+      {/* Права колонка — список профілів */}
+      <div className="grid gap-4 md:grid-cols-1">
+        {doctors.map((doc) => (
+          <DoctorCard key={doc.id} doctor={doc} />
+        ))}
+      </div>
+    </div>
+  );
 }

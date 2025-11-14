@@ -1,18 +1,30 @@
 // src/components/doctor-card.tsx
-import { Doctor } from '@prisma/client';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+"use client";
 
-type DoctorWithOptional = Doctor;
+type DoctorLike = {
+  id: string;
+  fullName: string;
+  city: string;
+  region: string;
+  specialization: string;
+  subSpecialization?: string | null;
+  clinicName?: string | null;
+  description?: string | null;
+  isTelepathologyAvailable: boolean;
+  isAcceptingNewPatients: boolean;
+  yearsOfExperience?: number | null;
+  avatarUrl?: string | null;
+};
 
-interface DoctorCardProps {
-  doctor: DoctorWithOptional;
-}
+type DoctorCardProps = {
+  doctor: DoctorLike;
+};
 
 export function DoctorCard({ doctor }: DoctorCardProps) {
   return (
-    <Card className="flex flex-col gap-2">
-      <CardHeader className="flex flex-row items-center gap-4">
+    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {/* Хедер з аватаром та ім'ям */}
+      <div className="flex items-center gap-4">
         {doctor.avatarUrl && (
           <img
             src={doctor.avatarUrl}
@@ -21,40 +33,45 @@ export function DoctorCard({ doctor }: DoctorCardProps) {
           />
         )}
         <div>
-          <CardTitle className="text-lg">{doctor.fullName}</CardTitle>
-          <CardDescription>
+          <div className="text-lg font-semibold">{doctor.fullName}</div>
+          <div className="text-sm text-slate-600">
             {doctor.specialization}
-            {doctor.subSpecialization ? ` • ${doctor.subSpecialization}` : ''}
-          </CardDescription>
-          <div className="mt-1 flex flex-wrap gap-2 text-sm text-muted-foreground">
+            {doctor.subSpecialization ? ` • ${doctor.subSpecialization}` : ""}
+          </div>
+          <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
             <span>
               {doctor.city}, {doctor.region}
             </span>
             {doctor.clinicName && <span>• {doctor.clinicName}</span>}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {doctor.description && (
-          <p className="text-sm text-muted-foreground">{doctor.description}</p>
+      </div>
+
+      {/* Опис */}
+      {doctor.description && (
+        <p className="text-sm text-slate-700">{doctor.description}</p>
+      )}
+
+      {/* "бейджі" */}
+      <div className="flex flex-wrap gap-2 text-xs">
+        {doctor.isTelepathologyAvailable && (
+          <span className="inline-flex items-center rounded-full bg-blue-600 px-2.5 py-0.5 font-semibold text-white">
+            Телепатологія
+          </span>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {doctor.isTelepathologyAvailable && (
-            <Badge variant="default">Телепатологія</Badge>
-          )}
-          {doctor.isAcceptingNewPatients ? (
-            <Badge variant="outline">Приймає нових пацієнтів</Badge>
-          ) : (
-            <Badge variant="outline">Тимчасово без запису</Badge>
-          )}
-          {doctor.yearsOfExperience && (
-            <Badge variant="secondary">
-              Досвід {doctor.yearsOfExperience}+ років
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        <span className="inline-flex items-center rounded-full border border-slate-300 px-2.5 py-0.5 font-semibold text-slate-800">
+          {doctor.isAcceptingNewPatients
+            ? "Приймає нових пацієнтів"
+            : "Тимчасово без запису"}
+        </span>
+
+        {doctor.yearsOfExperience != null && (
+          <span className="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 font-semibold text-slate-900">
+            Досвід {doctor.yearsOfExperience}+ років
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
