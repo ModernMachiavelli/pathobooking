@@ -2,11 +2,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DoctorsMap } from "@/components/doctors-map";
 import { DoctorCard } from "@/components/doctor-card";
 
 type DoctorFromApi = {
   id: string;
+  slug: string;
   fullName: string;
   lat: number | null;
   lng: number | null;
@@ -33,6 +35,7 @@ export default function DoctorMap() {
         const res = await fetch("/api/doctors");
         if (!res.ok) throw new Error("Не вдалося завантажити лікарів");
         const data = await res.json();
+        // API повертає повний об'єкт Doctor, включно зі slug
         setDoctors(data);
       } catch (e: any) {
         setError(e.message ?? "Помилка завантаження");
@@ -85,10 +88,12 @@ export default function DoctorMap() {
         <DoctorsMap doctors={mapDoctors} />
       </div>
 
-      {/* Права колонка — список профілів */}
+      {/* Права колонка — список профілів з переходом у /doctors/[slug] */}
       <div className="grid gap-4 md:grid-cols-1">
         {doctors.map((doc) => (
-          <DoctorCard key={doc.id} doctor={doc} />
+          <Link key={doc.id} href={`/doctors/${doc.slug}`} className="block">
+            <DoctorCard doctor={doc} />
+          </Link>
         ))}
       </div>
     </div>
