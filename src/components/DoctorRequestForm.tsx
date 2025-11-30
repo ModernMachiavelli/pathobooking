@@ -73,7 +73,7 @@ export function DoctorRequestForm({
   const disabled = status === "sending";
 
   return (
-    <Card asChild={false}>
+    <Card>
       <CardContent className="space-y-4 pt-4">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1">

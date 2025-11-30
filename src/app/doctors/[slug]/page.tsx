@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { DoctorsMap } from "@/components/doctors-map";
 import Link from "next/link";
-import type { PatientCase } from "@prisma/client";
+import type { PatientCase, Attachment } from "@prisma/client";
 import { DoctorRequestForm } from "@/components/DoctorRequestForm";
 
 type DoctorPageProps = {
@@ -32,11 +32,13 @@ export default async function DoctorPage({
     notFound();
   }
 
-  let matchedCase: PatientCase | null = null;
+  // Кейс + вкладення, якщо прийшли з caseId
+  let matchedCase: (PatientCase & { attachments: Attachment[] }) | null = null;
 
   if (caseId) {
     matchedCase = await prisma.patientCase.findUnique({
       where: { id: caseId },
+      include: { attachments: true },
     });
   }
 
@@ -54,6 +56,9 @@ export default async function DoctorPage({
           },
         ]
       : [];
+
+  const shortCaseId =
+    matchedCase?.id ? matchedCase.id.slice(-6).toUpperCase() : null;
 
   return (
     <div className="container mx-auto max-w-4xl py-8 space-y-6">
@@ -153,13 +158,138 @@ export default async function DoctorPage({
         </div>
       </div>
 
-      {/* Опис */}
+      {/* Опис лікаря */}
       {doctor.description && (
         <section className="space-y-2">
           <h2 className="text-lg font-semibold">Про лікаря</h2>
           <p className="text-sm text-slate-700 whitespace-pre-line">
             {doctor.description}
           </p>
+        </section>
+      )}
+
+      {/* Блок "Про цей кейс" + файли, якщо є caseId */}
+      {matchedCase && (
+        <section className="space-y-4">
+          {/* Короткий опис кейсу */}
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Про цей кейс</h2>
+              <div className="flex items-center gap-2">
+                {shortCaseId && (
+                  <span className="text-[11px] font-mono text-slate-500">
+                    ID кейсу: #{shortCaseId}
+                  </span>
+                )}
+                <Link
+                  href={`/cases/${matchedCase.id}`}
+                  className="text-[11px] text-blue-700 underline underline-offset-4"
+                >
+                  🔍 Відкрити повністю
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid gap-2 text-sm md:grid-cols-2">
+              <div>
+                <span className="font-medium">Підозрюваний орган: </span>
+                <span>
+                  {matchedCase.suspectedOrgan || "не вказано"}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium">Рівень підозри: </span>
+                <span>
+                  {matchedCase.suspicionLevel || "не вказано"}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium">Вік: </span>
+                <span>
+                  {matchedCase.age != null ? matchedCase.age : "не вказано"}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium">Стать: </span>
+                <span>{matchedCase.sex || "не вказано"}</span>
+              </div>
+            </div>
+
+            {matchedCase.mainComplaint && (
+              <div className="text-sm">
+                <div className="font-medium mb-1">Основна скарга:</div>
+                <p className="text-slate-700 whitespace-pre-line">
+                  {matchedCase.mainComplaint}
+                </p>
+              </div>
+            )}
+
+            {matchedCase.freeTextSummary && (
+              <div className="text-sm">
+                <div className="font-medium mb-1">
+                  Додатковий опис / контекст:
+                </div>
+                <p className="text-slate-700 whitespace-pre-line">
+                  {matchedCase.freeTextSummary}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Файли цього кейсу (короткий список) */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Файли цього кейсу</h3>
+
+            {matchedCase.attachments.length === 0 ? (
+              <p className="text-xs text-slate-500">
+                До цього кейсу ще не додано жодного файлу. Пацієнт може додати
+                їх на сторінці підбору лікарів.
+              </p>
+            ) : (
+              <ul className="space-y-1 text-xs">
+                {matchedCase.attachments.map((a) => {
+                  const created = a.createdAt.toLocaleString("uk-UA", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+
+                  const isImage = a.contentType?.startsWith("image/");
+
+                  return (
+                    <li
+                      key={a.id}
+                      className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5"
+                    >
+                      <div className="flex flex-col">
+                        <a
+                          href={a.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-700 underline underline-offset-4"
+                        >
+                          {a.filename}
+                        </a>
+                        <span className="text-[10px] text-slate-500">
+                          Тип: {a.type} • Додано: {created}
+                        </span>
+                      </div>
+
+                      {isImage && (
+                        <img
+                          src={a.url}
+                          alt={a.filename}
+                          className="h-10 w-10 rounded-md object-cover border border-slate-200"
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </section>
       )}
 
