@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,107 +21,161 @@ const schema = z.object({
   files: z.string().optional().default("")
 });
 
+type QuestionnaireFormValues = {
+  age?: number;
+  sex?: "male" | "female" | "other";
+  suspectedOrgan?: string;
+  suspicionLevel?: "low" | "medium" | "high";
+  mainComplaint?: string;
+  freeTextSummary?: string;
+};
+
 type FormData = z.infer<typeof schema>;
 
 export default function Questionnaire() {
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: { symptoms: [] }
-  });
-  const [result, setResult] = useState<{tags: string[], top: any[]}|null>(null);
+  const router = useRouter();
 
-  const onSubmit = (data: FormData) => {
-    const tags = deriveTags(questionnaireV1.items, data as any);
-    const doctors = [
-      { id: "1", name: "д-р Іваненко", city: "Київ", lat: 50.45, lng: 30.52, specialtyTags: ["breast", "he"] },
-      { id: "2", name: "д-р Коваль", city: "Львів", lat: 49.84, lng: 24.03, specialtyTags: ["gi", "ihc"] },
-      { id: "3", name: "д-р Шевченко", city: "Одеса", lat: 46.48, lng: 30.72, specialtyTags: ["derm", "biopsy"] }
-    ];
-    const scored = doctors
-      .map(d => ({...d, score: (tags.length ? (d.specialtyTags.filter(t => tags.includes(t)).length / new Set([...d.specialtyTags, ...tags]).size) : 0)}))
-      .sort((a,b) => b.score - a.score)
-      .slice(0, 5);
-    setResult({ tags, top: scored });
+  const form = useForm<QuestionnaireFormValues>({
+    defaultValues: {
+      age: undefined,
+      sex: undefined,
+      suspectedOrgan: "",
+      suspicionLevel: "medium",
+      mainComplaint: "",
+      freeTextSummary: "",
+    },
+  });
+
+  const onSubmit = async (values: QuestionnaireFormValues) => {
+    try {
+      const res = await fetch("/api/patient-cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          age: values.age ? Number(values.age) : undefined,
+          sex: values.sex,
+          suspectedOrgan: values.suspectedOrgan || undefined,
+          suspicionLevel: values.suspicionLevel,
+          mainComplaint: values.mainComplaint || undefined,
+          freeTextSummary: values.freeTextSummary || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to create patient case");
+        // тут можна показати toast / помилку у формі
+        return;
+      }
+
+      const data = await res.json();
+      const caseId = data.id as string;
+
+      // 👉 після збереження кейсу ведемо користувача до лікарів
+      router.push(`/doctors?caseId=${caseId}`);
+    } catch (e) {
+      console.error("Error while submitting questionnaire:", e);
+    }
   };
 
-  const onSelect = (id: string, value: string) => setValue(id as any, value as any);
+  // далі ти просто використовуєш form.handleSubmit(onSubmit) у <form>
+return (
+  <form
+    onSubmit={form.handleSubmit(onSubmit)}
+    className="space-y-4 max-w-xl"
+  >
+    <Card>
+      <CardContent className="space-y-4 pt-4">
+        {/* Вік */}
+        <div className="grid gap-2">
+          <Label htmlFor="age">Вік</Label>
+          <Input
+            id="age"
+            type="number"
+            placeholder="Наприклад, 55"
+            {...form.register("age", { valueAsNumber: true })}
+          />
+        </div>
 
-  return (
-    <Card className="max-w-3xl">
-      <CardContent className="space-y-4 p-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Вік</Label>
-              <Input type="number" {...register("age")} />
-              {errors.age && <p className="text-sm text-red-500">Некоректний вік</p>}
-            </div>
-            <div>
-              <Label>Стать</Label>
-              <Select onValueChange={(v)=>onSelect("sex", v)}>
-                <SelectTrigger><SelectValue placeholder="Обрати..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Чоловіча</SelectItem>
-                  <SelectItem value="female">Жіноча</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.sex && <p className="text-sm text-red-500">Оберіть стать</p>}
-            </div>
-            <div>
-              <Label>Регіон</Label>
-              <Select onValueChange={(v)=>onSelect("location", v)}>
-                <SelectTrigger><SelectValue placeholder="Обрати..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="kyiv">м. Київ</SelectItem>
-                  <SelectItem value="lviv">Львівська область</SelectItem>
-                  <SelectItem value="kharkiv">Харківська область</SelectItem>
-                  <SelectItem value="odesa">Одеська область</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.location && <p className="text-sm text-red-500">Оберіть регіон</p>}
-            </div>
-          </div>
+        {/* Стать */}
+        <div className="grid gap-2">
+          <Label>Стать</Label>
+          <Select
+            value={form.watch("sex") ?? ""}
+            onValueChange={(value) =>
+              form.setValue("sex", value as "male" | "female" | "other")
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Оберіть стать" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Чоловіча</SelectItem>
+              <SelectItem value="female">Жіноча</SelectItem>
+              <SelectItem value="other">Інша / не вказувати</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-          <Separator />
+        {/* Підозрюваний орган / зона */}
+        <div className="grid gap-2">
+          <Label htmlFor="organ">Орган / зона, де виявлено проблему</Label>
+          <Input
+            id="organ"
+            placeholder="Наприклад: молочна залоза, простата, легені..."
+            {...form.register("suspectedOrgan")}
+          />
+        </div>
 
-          <div>
-            <Label>Симптоми / що турбує</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-              {questionnaireV1.items.find(i=>i.id==="symptoms")!.options!.map(opt => (
-                <label key={opt.value} className="flex items-center gap-2">
-                  <input type="checkbox" value={opt.value} onChange={(e)=>{
-                    const current = new Set((watch("symptoms")||[]) as string[]);
-                    if (e.target.checked) current.add(opt.value); else current.delete(opt.value);
-                    const arr = Array.from(current);
-                    (setValue as any)("symptoms", arr, { shouldDirty: true });
-                  }} />
-                  <span>{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+        {/* Рівень підозри */}
+        <div className="grid gap-2">
+          <Label>Наскільки серйозною здається ситуація?</Label>
+          <Select
+            value={form.watch("suspicionLevel") ?? "medium"}
+            onValueChange={(value) =>
+              form.setValue(
+                "suspicionLevel",
+                value as "low" | "medium" | "high"
+              )
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Оберіть рівень" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="low">Низька</SelectItem>
+              <SelectItem value="medium">Середня</SelectItem>
+              <SelectItem value="high">Висока</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-          <div>
-            <Label>Посилання на файли/знімки (тимчасово)</Label>
-            <Input placeholder="URL або залиш порожнім" {...register("files")} />
-          </div>
+        {/* Основна скарга */}
+        <div className="grid gap-2">
+          <Label htmlFor="complaint">Коротко опишіть, що вас турбує</Label>
+          <Input
+            id="complaint"
+            placeholder="Наприклад: за результатами мамографії виявлено підозрілу ділянку..."
+            {...form.register("mainComplaint")}
+          />
+        </div>
 
-          <div className="pt-2">
-            <Button type="submit">Підібрати лікарів</Button>
-          </div>
-        </form>
+        {/* Додаткова інформація */}
+        <div className="grid gap-2">
+          <Label htmlFor="summary">Додаткова інформація (необов'язково)</Label>
+          <Input
+            id="summary"
+            placeholder="Будь-які деталі, які вважаєте важливими"
+            {...form.register("freeTextSummary")}
+          />
+        </div>
 
-        {result && (
-          <div className="mt-4 space-y-2">
-            <h3 className="font-semibold">Знайдені теги: {result.tags.join(", ") || "—"}</h3>
-            <ul className="list-disc pl-5">
-              {result.top.map((d:any)=>(
-                <li key={d.id}>{d.name} ({d.city}) — релевантність: {(d.score*100).toFixed(0)}%</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <Separator />
+
+        <Button type="submit" className="w-full">
+          Підібрати лікаря
+        </Button>
       </CardContent>
     </Card>
-  );
+  </form>
+);
 }

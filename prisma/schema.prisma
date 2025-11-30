@@ -101,3 +101,19 @@ model Case {
   createdAt              DateTime @default(now())
 }
 
+model PatientCase {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Базові поля анкети – ти потім зможеш їх розширити/поміняти
+  age              Int?
+  sex              String?   // "male" | "female" | "other"
+  suspectedOrgan   String?   // "breast", "lung", "skin", "prostate", ...
+  suspicionLevel   String?   // "low" | "medium" | "high"
+  mainComplaint    String?   // короткий текст, чому звернувся
+  freeTextSummary  String?   // зведений опис або “note від лікаря” у майбутньому
+
+  // Зв'язок з користувачем/лікарями можна додати пізніше
+  // userId String? 
+}
