@@ -1,21 +1,23 @@
-import Link from "next/link";
+// src/app/page.tsx
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Questionnaire from "@/components/Questionnaire";
 import DoctorMap from "@/components/DoctorMap";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="container mx-auto p-4">
-      {/* Шапка з лінком на список лікарів */}
-      <header className="mb-4 flex items-center justify-between">
+    <main className="container mx-auto p-4 space-y-3">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">PathoBooking</h1>
+
+        {/* Debug-лінк на список кейсів */}
         <Link
-          href="/doctors"
-          className="text-sm text-blue-600 underline underline-offset-4"
+          href="/cases"
+          className="text-xs text-slate-500 underline underline-offset-4"
         >
-          Перейти до списку лікарів →
+          🔍 Мої кейси (debug)
         </Link>
-      </header>
+      </div>
 
       <Tabs defaultValue="form">
         <TabsList>
