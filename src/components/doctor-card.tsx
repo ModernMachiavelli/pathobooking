@@ -1,4 +1,3 @@
-// src/components/doctor-card.tsx
 "use client";
 
 type DoctorLike = {
@@ -18,11 +17,19 @@ type DoctorLike = {
 
 type DoctorCardProps = {
   doctor: DoctorLike;
+  isRecommended?: boolean;
 };
 
-export function DoctorCard({ doctor }: DoctorCardProps) {
+export function DoctorCard({ doctor, isRecommended }: DoctorCardProps) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {/* бейдж рекомендації */}
+      {isRecommended && (
+        <div className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+          Рекомендовано під ваш кейс
+        </div>
+      )}
+
       {/* Хедер з аватаром та ім'ям */}
       <div className="flex items-center gap-4">
         {doctor.avatarUrl && (
@@ -52,7 +59,7 @@ export function DoctorCard({ doctor }: DoctorCardProps) {
         <p className="text-sm text-slate-700">{doctor.description}</p>
       )}
 
-      {/* "бейджі" */}
+      {/* "бейджі" стану прийому / телепатології */}
       <div className="flex flex-wrap gap-2 text-xs">
         {doctor.isTelepathologyAvailable && (
           <span className="inline-flex items-center rounded-full bg-blue-600 px-2.5 py-0.5 font-semibold text-white">

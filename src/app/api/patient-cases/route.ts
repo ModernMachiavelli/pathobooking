@@ -6,7 +6,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // Дуже простий валідатор. Потім можна підключити zod.
     const {
       age,
       sex,
@@ -31,15 +30,12 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(
-      { id: patientCase.id },
-      { status: 201 }
-    );
+    return NextResponse.json({ id: patientCase.id }, { status: 201 });
   } catch (e) {
     console.error("[POST /api/patient-cases] error:", e);
     return NextResponse.json(
       { error: "Не вдалося створити кейс пацієнта" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

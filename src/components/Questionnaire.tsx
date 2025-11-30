@@ -77,7 +77,7 @@ export default function Questionnaire() {
     }
   };
 
-  // далі ти просто використовуєш form.handleSubmit(onSubmit) у <form>
+// далі ти просто використовуєш form.handleSubmit(onSubmit) у <form>
 return (
   <form
     onSubmit={form.handleSubmit(onSubmit)}
