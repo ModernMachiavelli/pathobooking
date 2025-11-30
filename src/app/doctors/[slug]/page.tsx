@@ -1,8 +1,9 @@
+// src/app/doctors/[slug]/page.tsx
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { DoctorsMap } from "@/components/doctors-map";
 import Link from "next/link";
-import { PatientCase } from "@prisma/client";
+import type { PatientCase } from "@prisma/client";
 import { DoctorRequestForm } from "@/components/DoctorRequestForm";
 
 type DoctorPageProps = {
@@ -56,12 +57,32 @@ export default async function DoctorPage({
 
   return (
     <div className="container mx-auto max-w-4xl py-8 space-y-6">
-      <Link
-        href={caseId ? `/doctors?caseId=${caseId}` : "/doctors"}
-        className="text-sm text-blue-600 underline underline-offset-4"
-      >
-        ← Назад до списку лікарів
-      </Link>
+      {/* Верхня панель навігації + debug-кнопка */}
+      <div className="flex items-center justify-between gap-4">
+        <Link
+          href={caseId ? `/doctors?caseId=${caseId}` : "/doctors"}
+          className="text-sm text-blue-600 underline underline-offset-4"
+        >
+          ← Назад до списку лікарів
+        </Link>
+
+        <div className="flex items-center gap-3">
+          {/* Невелике debug-посилання в inbox */}
+          <Link
+            href={`/doctors/${doctor.slug}/requests`}
+            className="text-[11px] text-slate-500 underline underline-offset-4"
+          >
+            📥 Вхідні запити (debug)
+          </Link>
+
+          <Link
+            href="/"
+            className="text-xs text-slate-500 underline underline-offset-4"
+          >
+            На головну
+          </Link>
+        </div>
+      </div>
 
       {/* Верхній блок: аватар + основна інформація */}
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
