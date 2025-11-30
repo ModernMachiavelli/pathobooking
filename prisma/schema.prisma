@@ -116,6 +116,8 @@ model PatientCase {
   freeTextSummary String?
 
   appointmentRequests AppointmentRequest[] @relation("PatientCaseAppointments")
+
+  attachments Attachment[] @relation("CaseAttachments")
 }
 
 enum AppointmentStatus {
@@ -138,4 +140,18 @@ model AppointmentRequest {
 
   patientCase   PatientCase @relation("PatientCaseAppointments", fields: [patientCaseId], references: [id])
   doctor        Doctor      @relation("DoctorAppointments",       fields: [doctorId],      references: [id])
+}
+
+model Attachment {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+
+  patientCaseId String
+  type          String   @default("other") // "histology", "lab_report", "imaging", ...
+  url           String
+  filename      String
+  size          Int?
+  contentType   String?
+
+  patientCase   PatientCase @relation("CaseAttachments", fields: [patientCaseId], references: [id])
 }

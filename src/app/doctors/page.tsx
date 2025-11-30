@@ -1,9 +1,10 @@
 // src/app/doctors/page.tsx
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { Doctor, PatientCase } from "@prisma/client";
+import { Doctor, PatientCase, Attachment } from "@prisma/client";
 import { DoctorCard } from "@/components/doctor-card";
 import { DoctorsMap } from "@/components/doctors-map";
+import { CaseAttachmentsUploader } from "@/components/CaseAttachmentsUploader";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +15,13 @@ type DoctorsPageProps = {
 export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
   const { caseId, organ: organParam } = await searchParams;
 
-  let matchedCase: PatientCase | null = null;
+  // ---- завантажуємо кейс разом із вкладеннями (якщо є caseId) ----
+  let matchedCase: (PatientCase & { attachments: Attachment[] }) | null = null;
 
   if (caseId) {
     matchedCase = await prisma.patientCase.findUnique({
       where: { id: caseId },
+      include: { attachments: true },
     });
   }
 
@@ -32,6 +35,16 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
   const organFromCase = matchedCase?.suspectedOrgan
     ? matchedCase.suspectedOrgan.toLowerCase()
     : null;
+
+  // ---- підготовка вкладень для клієнтського компонента ----
+  const attachmentSummaries =
+    matchedCase?.attachments.map((a) => ({
+      id: a.id,
+      filename: a.filename,
+      url: a.url,
+      type: a.type,
+      createdAt: a.createdAt.toISOString(),
+    })) ?? [];
 
   // 🔹 Варіанти органів: value — ключ у URL, keywords — корені/синоніми
   const organOptions: {
@@ -132,7 +145,7 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
     specialization: doc.specialization,
   }));
 
-  // href для фільтрів (збережемо caseId, якщо є)
+  // ---- href для фільтрів (збережемо caseId, якщо є) ----
   const makeHref = (value: string | null) => {
     const params = new URLSearchParams();
     if (caseId) params.set("caseId", caseId);
@@ -141,7 +154,7 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
     return query ? `/doctors?${query}` : "/doctors";
   };
 
-  // href для профілю лікаря (щоб caseId потрапив на сторінку лікаря)
+  // ---- href для профілю лікаря (щоб caseId потрапив на сторінку лікаря) ----
   const makeDoctorHref = (slug: string) => {
     const params = new URLSearchParams();
     if (caseId) params.set("caseId", caseId);
@@ -199,6 +212,16 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
           заповнити анкету на головній сторінці, щоб ми краще підібрали лікарів
           під вашу ситуацію.
         </p>
+      )}
+
+      {/* Блок завантаження файлів для кейсу */}
+      {matchedCase && (
+        <section className="space-y-2">
+          <CaseAttachmentsUploader
+            caseId={matchedCase.id}
+            initialAttachments={attachmentSummaries}
+          />
+        </section>
       )}
 
       {/* Фільтр по органу */}
