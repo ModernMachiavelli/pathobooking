@@ -1,3 +1,4 @@
+// src/app/doctors/page.tsx
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Doctor, PatientCase } from "@prisma/client";
@@ -32,7 +33,7 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
     ? matchedCase.suspectedOrgan.toLowerCase()
     : null;
 
-  // 🔹 Варіанти органів з ключами + коренями для пошуку
+  // 🔹 Варіанти органів: value — ключ у URL, keywords — корені/синоніми
   const organOptions: {
     label: string;
     value: string | null;
@@ -46,38 +47,22 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
     {
       label: "Молочна залоза",
       value: "breast",
-      keywords: [
-        "молочн", // молочна, молочної, молочній…
-        "груд", // груди, грудей…
-        "breast",
-      ],
+      keywords: ["молочн", "груд", "breast"],
     },
     {
       label: "Передміхурова залоза",
       value: "prostate",
-      keywords: [
-        "передміхур", // передміхурова, передміхурової…
-        "простата",
-        "prostat",
-      ],
+      keywords: ["передміхур", "простата", "prostat"],
     },
     {
       label: "Легені",
       value: "lung",
-      keywords: [
-        "леген", // легені, легенях, легеневий…
-        "lung",
-        "pulmon",
-      ],
+      keywords: ["леген", "lung", "pulmon"],
     },
     {
       label: "Шкіра",
       value: "skin",
-      keywords: [
-        "шкір", // шкіра, шкірний, шкірних…
-        "дермат",
-        "skin",
-      ],
+      keywords: ["шкір", "дермат", "skin"],
     },
   ];
 
@@ -86,7 +71,7 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
     (opt) => opt.value === selectedOrganKey
   );
 
-  // 🧪 Фільтруємо лікарів по ключових словах, якщо є selectedOrganOption
+  // 🧪 Фільтрація лікарів по органу (якщо обрано)
   const filteredDoctors = doctors.filter((doc) => {
     if (!selectedOrganOption || selectedOrganOption.keywords.length === 0) {
       return true; // немає фільтра → всі
@@ -104,7 +89,7 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
     return selectedOrganOption.keywords.some((kw) => haystack.includes(kw));
   });
 
-  // 🔹 Matching для "Рекомендовано під ваш кейс" — по органу з анкети
+  // 🔹 Matching для "Рекомендовано під ваш кейс" (по органу з анкети + телепатологія)
   const scoredDoctors = filteredDoctors.map((doc) => {
     let score = 0;
 
@@ -147,13 +132,21 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
     specialization: doc.specialization,
   }));
 
-  // Будуємо href з урахуванням caseId + organ
+  // href для фільтрів (збережемо caseId, якщо є)
   const makeHref = (value: string | null) => {
     const params = new URLSearchParams();
     if (caseId) params.set("caseId", caseId);
     if (value) params.set("organ", value);
     const query = params.toString();
     return query ? `/doctors?${query}` : "/doctors";
+  };
+
+  // href для профілю лікаря (щоб caseId потрапив на сторінку лікаря)
+  const makeDoctorHref = (slug: string) => {
+    const params = new URLSearchParams();
+    if (caseId) params.set("caseId", caseId);
+    const query = params.toString();
+    return query ? `/doctors/${slug}?${query}` : `/doctors/${slug}`;
   };
 
   return (
@@ -240,7 +233,11 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
         {/* Список карток — після фільтра + з "Рекомендовано" */}
         <div className="grid gap-4 md:grid-cols-1">
           {scoredDoctors.map(({ doc, score }) => (
-            <Link key={doc.id} href={`/doctors/${doc.slug}`} className="block">
+            <Link
+              key={doc.id}
+              href={makeDoctorHref(doc.slug)}
+              className="block"
+            >
               <DoctorCard doctor={doc} isRecommended={score > 0} />
             </Link>
           ))}

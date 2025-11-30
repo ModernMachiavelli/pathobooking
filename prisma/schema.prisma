@@ -48,6 +48,8 @@ model Doctor {
 
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
+  appointmentRequests AppointmentRequest[] @relation("DoctorAppointments")
 }
 
 model DoctorProfile {
@@ -106,14 +108,34 @@ model PatientCase {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Базові поля анкети – ти потім зможеш їх розширити/поміняти
-  age              Int?
-  sex              String?   // "male" | "female" | "other"
-  suspectedOrgan   String?   // "breast", "lung", "skin", "prostate", ...
-  suspicionLevel   String?   // "low" | "medium" | "high"
-  mainComplaint    String?   // короткий текст, чому звернувся
-  freeTextSummary  String?   // зведений опис або “note від лікаря” у майбутньому
+  age             Int?
+  sex             String?
+  suspectedOrgan  String?
+  suspicionLevel  String?
+  mainComplaint   String?
+  freeTextSummary String?
 
-  // Зв'язок з користувачем/лікарями можна додати пізніше
-  // userId String? 
+  appointmentRequests AppointmentRequest[] @relation("PatientCaseAppointments")
+}
+
+enum AppointmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  DONE
+}
+
+model AppointmentRequest {
+  id        String            @id @default(cuid())
+  createdAt DateTime          @default(now())
+  status    AppointmentStatus @default(PENDING)
+
+  patientEmail String?
+  message      String?
+
+  patientCaseId String
+  doctorId      String
+
+  patientCase   PatientCase @relation("PatientCaseAppointments", fields: [patientCaseId], references: [id])
+  doctor        Doctor      @relation("DoctorAppointments",       fields: [doctorId],      references: [id])
 }

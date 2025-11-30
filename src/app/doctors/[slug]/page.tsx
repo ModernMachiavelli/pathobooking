@@ -2,17 +2,22 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { DoctorsMap } from "@/components/doctors-map";
 import Link from "next/link";
+import { PatientCase } from "@prisma/client";
+import { DoctorRequestForm } from "@/components/DoctorRequestForm";
 
 type DoctorPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ caseId?: string }>;
 };
 
 export const dynamic = "force-dynamic";
-// export const runtime = "nodejs"; // якщо в проекті глобально edge
 
-export default async function DoctorPage({ params }: DoctorPageProps) {
-  // У Next 16 params — це Promise, тому спочатку чекаємо
+export default async function DoctorPage({
+  params,
+  searchParams,
+}: DoctorPageProps) {
   const { slug } = await params;
+  const { caseId } = await searchParams;
 
   if (!slug) {
     notFound();
@@ -24,6 +29,14 @@ export default async function DoctorPage({ params }: DoctorPageProps) {
 
   if (!doctor) {
     notFound();
+  }
+
+  let matchedCase: PatientCase | null = null;
+
+  if (caseId) {
+    matchedCase = await prisma.patientCase.findUnique({
+      where: { id: caseId },
+    });
   }
 
   const mapDoctors =
@@ -44,7 +57,7 @@ export default async function DoctorPage({ params }: DoctorPageProps) {
   return (
     <div className="container mx-auto max-w-4xl py-8 space-y-6">
       <Link
-        href="/doctors"
+        href={caseId ? `/doctors?caseId=${caseId}` : "/doctors"}
         className="text-sm text-blue-600 underline underline-offset-4"
       >
         ← Назад до списку лікарів
@@ -126,6 +139,26 @@ export default async function DoctorPage({ params }: DoctorPageProps) {
           <p className="text-sm text-slate-700 whitespace-pre-line">
             {doctor.description}
           </p>
+        </section>
+      )}
+
+      {/* Форма запиту, якщо є кейс */}
+      {matchedCase ? (
+        <section className="space-y-2">
+          <DoctorRequestForm
+            doctorId={doctor.id}
+            caseId={matchedCase.id}
+            suspectedOrgan={matchedCase.suspectedOrgan ?? null}
+            suspicionLevel={matchedCase.suspicionLevel ?? null}
+          />
+        </section>
+      ) : (
+        <section className="space-y-2">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
+            Щоб надіслати кейс цьому лікарю, спочатку заповніть анкету на
+            головній сторінці. Після цього оберіть лікаря зі списку, і ми
+            автоматично підв&apos;яжемо ваш кейс до запиту.
+          </div>
         </section>
       )}
 
