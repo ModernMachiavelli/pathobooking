@@ -193,15 +193,11 @@ export default async function DoctorPage({
             <div className="grid gap-2 text-sm md:grid-cols-2">
               <div>
                 <span className="font-medium">Підозрюваний орган: </span>
-                <span>
-                  {matchedCase.suspectedOrgan || "не вказано"}
-                </span>
+                <span>{matchedCase.suspectedOrgan || "не вказано"}</span>
               </div>
               <div>
                 <span className="font-medium">Рівень підозри: </span>
-                <span>
-                  {matchedCase.suspicionLevel || "не вказано"}
-                </span>
+                <span>{matchedCase.suspicionLevel || "не вказано"}</span>
               </div>
               <div>
                 <span className="font-medium">Вік: </span>
@@ -212,6 +208,29 @@ export default async function DoctorPage({
               <div>
                 <span className="font-medium">Стать: </span>
                 <span>{matchedCase.sex || "не вказано"}</span>
+              </div>
+
+              {/* клінічні поля */}
+              <div>
+                <span className="font-medium">Тип біопсії: </span>
+                <span>{matchedCase.biopsyType || "не вказано"}</span>
+              </div>
+              <div>
+                <span className="font-medium">Тип матеріалу: </span>
+                <span>{matchedCase.materialType || "не вказано"}</span>
+              </div>
+              <div>
+                <span className="font-medium">Попереднє лікування: </span>
+                <span>{matchedCase.priorTreatment || "не вказано"}</span>
+              </div>
+              <div>
+                <span className="font-medium">Стадія / TNM / ризик: </span>
+                <span>{matchedCase.stagingInfo || "не вказано"}</span>
+              </div>
+
+              <div className="md:col-span-2">
+                <span className="font-medium">Підозрюваний тип пухлини: </span>
+                <span>{matchedCase.suspectedCancerType || "не вказано"}</span>
               </div>
             </div>
 

@@ -18,7 +18,22 @@ const schema = z.object({
   sex: z.string().min(1),
   location: z.string().min(1),
   symptoms: z.array(z.string()).optional().default([]),
-  files: z.string().optional().default("")
+  files: z.string().optional().default("")._zod,
+
+  biopsyType: z
+    .enum(["core", "excisional", "fna", "endoscopic", "other"])
+    .optional()
+    .nullable(),
+  materialType: z
+    .enum(["biopsy", "surgical", "cytology", "other"])
+    .optional()
+    .nullable(),
+  priorTreatment: z
+    .enum(["none", "surgery", "chemo", "radio", "targeted", "immuno", "other"])
+    .optional()
+    .nullable(),
+  suspectedCancerType: z.string().max(200).optional().nullable(),
+  stagingInfo: z.string().max(200).optional().nullable(),
 });
 
 type QuestionnaireFormValues = {

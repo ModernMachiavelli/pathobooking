@@ -62,12 +62,8 @@ export default async function CasePage({ params }: PageProps) {
       {/* Навігація */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">
-            Кейс #{shortId}
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Створено: {createdAt}
-          </p>
+          <h1 className="text-2xl font-semibold">Кейс #{shortId}</h1>
+          <p className="text-sm text-slate-600 mt-1">Створено: {createdAt}</p>
         </div>
 
         <div className="flex flex-col items-end gap-2">
@@ -80,21 +76,17 @@ export default async function CasePage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Основна інформація про кейс */}
+      {/* Основна + клінічна інформація про кейс */}
       <section className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
         <h2 className="text-lg font-semibold">Загальна інформація</h2>
         <div className="grid gap-2 text-sm md:grid-cols-2">
           <div>
             <span className="font-medium">Підозрюваний орган: </span>
-            <span>
-              {patientCase.suspectedOrgan || "не вказано"}
-            </span>
+            <span>{patientCase.suspectedOrgan || "не вказано"}</span>
           </div>
           <div>
             <span className="font-medium">Рівень підозри: </span>
-            <span>
-              {patientCase.suspicionLevel || "не вказано"}
-            </span>
+            <span>{patientCase.suspicionLevel || "не вказано"}</span>
           </div>
           <div>
             <span className="font-medium">Вік: </span>
@@ -105,6 +97,29 @@ export default async function CasePage({ params }: PageProps) {
           <div>
             <span className="font-medium">Стать: </span>
             <span>{patientCase.sex || "не вказано"}</span>
+          </div>
+
+          {/* нові клінічні поля */}
+          <div>
+            <span className="font-medium">Тип біопсії: </span>
+            <span>{patientCase.biopsyType || "не вказано"}</span>
+          </div>
+          <div>
+            <span className="font-medium">Тип матеріалу: </span>
+            <span>{patientCase.materialType || "не вказано"}</span>
+          </div>
+          <div>
+            <span className="font-medium">Попереднє лікування: </span>
+            <span>{patientCase.priorTreatment || "не вказано"}</span>
+          </div>
+          <div>
+            <span className="font-medium">Стадія / TNM / ризик: </span>
+            <span>{patientCase.stagingInfo || "не вказано"}</span>
+          </div>
+
+          <div className="md:col-span-2">
+            <span className="font-medium">Підозрюваний тип пухлини: </span>
+            <span>{patientCase.suspectedCancerType || "не вказано"}</span>
           </div>
         </div>
 
@@ -156,20 +171,18 @@ export default async function CasePage({ params }: PageProps) {
                   key={a.id}
                   className="flex flex-col gap-1 rounded-md border border-slate-200 bg-white px-3 py-2 md:flex-row md:items-center md:justify-between"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                      <a
-                        href={a.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-700 underline underline-offset-4"
-                      >
-                        {a.filename}
-                      </a>
-                      <span className="text-[11px] text-slate-500">
-                        Тип: {a.type} • Додано: {created}
-                      </span>
-                    </div>
+                  <div className="flex flex-col">
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-700 underline underline-offset-4"
+                    >
+                      {a.filename}
+                    </a>
+                    <span className="text-[11px] text-slate-500">
+                      Тип: {a.type} • Додано: {created}
+                    </span>
                   </div>
 
                   {isImage && (

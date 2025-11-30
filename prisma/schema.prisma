@@ -115,9 +115,14 @@ model PatientCase {
   mainComplaint   String?
   freeTextSummary String?
 
-  appointmentRequests AppointmentRequest[] @relation("PatientCaseAppointments")
+  biopsyType         String?  // тип біопсії: core, excisional, FNA, endoscopic...
+  materialType       String?  // матеріал: біопсія, операційний матеріал, цитологія
+  priorTreatment     String?  // попереднє лікування: операція, хіміо, променева тощо
+  suspectedCancerType String? // підозрюваний тип пухлини (наприклад, інвазивна протокова карцинома)
+  stagingInfo        String?  // стадія / TNM / група ризику, якщо відомо
 
-  attachments Attachment[] @relation("CaseAttachments")
+  appointmentRequests AppointmentRequest[] @relation("PatientCaseAppointments")
+  attachments         Attachment[]        @relation("CaseAttachments")
 }
 
 enum AppointmentStatus {
