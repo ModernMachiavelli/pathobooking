@@ -177,7 +177,7 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
 
       {/* Банер з кейсом, якщо прийшли з анкети */}
       {matchedCase && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="font-medium">
               Ми підібрали лікарів для вашого кейсу
@@ -197,12 +197,22 @@ export default async function DoctorsPage({ searchParams }: DoctorsPageProps) {
             </div>
           </div>
 
-          <Link
-            href="/"
-            className="mt-2 md:mt-0 text-xs font-medium text-blue-700 underline underline-offset-4"
-          >
-            Змінити відповіді анкети
-          </Link>
+          <div className="flex flex-col items-end gap-1">
+            {/* debug-перегляд кейсу */}
+            <Link
+              href={`/cases/${matchedCase.id}`}
+              className="text-xs text-slate-700 underline underline-offset-4"
+            >
+              🔍 Переглянути мій кейс (debug)
+            </Link>
+
+            <Link
+              href="/"
+              className="text-xs font-medium text-blue-700 underline underline-offset-4"
+            >
+              Змінити відповіді анкети
+            </Link>
+          </div>
         </div>
       )}
 
