@@ -1,15 +1,22 @@
-import "@/app/globals.css";
-import { ReactQueryProvider } from "@/components/providers/ReactQueryProvider";
+// src/app/layout.tsx
+import type { Metadata } from "next";
+import "./globals.css";
+import AuthProvider from "@/components/AuthProvider";
 
-export const metadata = { title: "PathoBooking" };
+export const metadata: Metadata = {
+  title: "PathoBooking",
+  description: "Підбір патоморфологів для онкологічних пацієнтів",
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="uk">
-      <body className="min-h-dvh bg-background text-foreground">
-        <ReactQueryProvider>
-          {children}
-        </ReactQueryProvider>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
