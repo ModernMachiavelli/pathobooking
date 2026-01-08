@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import UserStatus from "@/components/UserStatus";
+import MainNav from "@/components/MainNav";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -20,10 +21,13 @@ export default function RootLayout({
       <body className="bg-slate-50">
         <AuthProvider>
           <header className="border-b bg-white">
-            <div className="container mx-auto flex items-center justify-between px-4 py-2">
-              <Link href="/" className="text-sm font-semibold">
-                PathoBooking
-              </Link>
+            <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-2">
+              <div className="flex items-center gap-4">
+                <Link href="/" className="text-sm font-semibold">
+                  PathoBooking
+                </Link>
+                <MainNav />
+              </div>
               <UserStatus />
             </div>
           </header>

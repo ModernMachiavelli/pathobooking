@@ -29,18 +29,27 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // ⚠️ На даному етапі перевіряємо plain-text пароль.
-        // У БД в полі passwordHash має лежати та ж строка, що й пароль.
+        // ⚠️ Поки що plain-text перевірка
         if (credentials.password !== user.passwordHash) {
           return null;
         }
 
-        // Повертаємо "чистий" обʼєкт юзера без пароля
+        // Якщо це лікар — знайдемо повʼязаний Doctor, щоб дістати slug
+        let doctorSlug: string | undefined = undefined;
+        if (user.role === "DOCTOR") {
+          const doctor = await prisma.doctor.findFirst({
+            where: { userId: user.id },
+            select: { slug: true },
+          });
+          doctorSlug = doctor?.slug ?? undefined;
+        }
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
+          doctorSlug,
         } as any;
       },
     }),
@@ -50,18 +59,19 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // при логіні додаємо в токен інфу з user
+      // при логіні переносимо дані з user до токена
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+        token.doctorSlug = (user as any).doctorSlug;
       }
       return token;
     },
     async session({ session, token }) {
-      // прокидуємо id та role в session.user
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
+        (session.user as any).doctorSlug = token.doctorSlug;
       }
       return session;
     },
