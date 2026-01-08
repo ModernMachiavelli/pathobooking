@@ -9,11 +9,19 @@ datasource db {
 }
 
 model User {
-  id        String         @id @default(cuid())
-  email     String         @unique
-  createdAt DateTime       @default(now())
-  role      Role           @default(PATIENT)
-  doctor    DoctorProfile?
+  id    String   @id @default(cuid())
+  email String   @unique
+  name  String?
+  role  UserRole @default(PATIENT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctorProfile DoctorProfile?
+
+  patientCases        PatientCase[]
+  appointmentRequests AppointmentRequest[] @relation("PatientUserAppointmentRequests")
+  doctor              Doctor?
 }
 
 enum Role {
@@ -22,32 +30,41 @@ enum Role {
   MOD
 }
 
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
 model Doctor {
-  id           String   @id @default(cuid())
-  fullName     String
-  slug         String   @unique
-  email        String?  @unique
-  phone        String?
+  id       String  @id @default(cuid())
+  fullName String
+  slug     String  @unique
+  email    String? @unique
+  phone    String?
 
-  clinicName   String?
-  city         String
-  region       String   // Напр. "Сумська", "Київська" — можна буде фільтрувати по області
+  clinicName String?
+  city       String
+  region     String // Напр. "Сумська", "Київська" — можна буде фільтрувати по області
 
-  specialization String // Основна спеціалізація (напр. "патоморфолог", "онколог")
+  specialization    String // Основна спеціалізація (напр. "патоморфолог", "онколог")
   subSpecialization String? // Напр. "молочна залоза", "легені", "гістологія шкіри" тощо
 
   yearsOfExperience Int?
-  description  String?  // Короткий опис / bio
-  avatarUrl    String?  // Шлях до аватарки (поки можна public/avatar-*.png)
+  description       String? // Короткий опис / bio
+  avatarUrl         String? // Шлях до аватарки (поки можна public/avatar-*.png)
 
   isTelepathologyAvailable Boolean @default(false)
   isAcceptingNewPatients   Boolean @default(true)
 
-  lat          Float?    // Для карти України
-  lng          Float?
+  lat Float? // Для карти України
+  lng Float?
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
 
   appointmentRequests AppointmentRequest[] @relation("DoctorAppointments")
 }
@@ -115,14 +132,17 @@ model PatientCase {
   mainComplaint   String?
   freeTextSummary String?
 
-  biopsyType         String?  // тип біопсії: core, excisional, FNA, endoscopic...
-  materialType       String?  // матеріал: біопсія, операційний матеріал, цитологія
-  priorTreatment     String?  // попереднє лікування: операція, хіміо, променева тощо
+  biopsyType          String? // тип біопсії: core, excisional, FNA, endoscopic...
+  materialType        String? // матеріал: біопсія, операційний матеріал, цитологія
+  priorTreatment      String? // попереднє лікування: операція, хіміо, променева тощо
   suspectedCancerType String? // підозрюваний тип пухлини (наприклад, інвазивна протокова карцинома)
-  stagingInfo        String?  // стадія / TNM / група ризику, якщо відомо
+  stagingInfo         String? // стадія / TNM / група ризику, якщо відомо
 
-  appointmentRequests AppointmentRequest[] @relation("PatientCaseAppointments")
-  attachments         Attachment[]        @relation("CaseAttachments")
+  createdByUserId String?
+  createdByUser   User?   @relation(fields: [createdByUserId], references: [id])
+
+  attachments         Attachment[]         @relation("CaseAttachments")
+  appointmentRequests AppointmentRequest[]
 }
 
 enum AppointmentStatus {
@@ -133,30 +153,35 @@ enum AppointmentStatus {
 }
 
 model AppointmentRequest {
-  id        String            @id @default(cuid())
-  createdAt DateTime          @default(now())
-  status    AppointmentStatus @default(PENDING)
-
-  patientEmail String?
-  message      String?
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   patientCaseId String
-  doctorId      String
+  patientCase   PatientCase @relation(fields: [patientCaseId], references: [id])
 
-  patientCase   PatientCase @relation("PatientCaseAppointments", fields: [patientCaseId], references: [id])
-  doctor        Doctor      @relation("DoctorAppointments",       fields: [doctorId],      references: [id])
+  doctorId String
+  doctor   Doctor @relation("DoctorAppointments", fields: [doctorId], references: [id])
+
+  patientEmail String
+  message      String
+  status       AppointmentStatus @default(PENDING)
+
+  // прив’язка до User (пацієнт)
+  patientUserId String?
+  patientUser   User?   @relation("PatientUserAppointmentRequests", fields: [patientUserId], references: [id])
 }
 
 model Attachment {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   patientCaseId String
-  type          String   @default("other") // "histology", "lab_report", "imaging", ...
+  type          String  @default("other") // "histology", "lab_report", "imaging", ...
   url           String
   filename      String
   size          Int?
   contentType   String?
 
-  patientCase   PatientCase @relation("CaseAttachments", fields: [patientCaseId], references: [id])
+  patientCase PatientCase @relation("CaseAttachments", fields: [patientCaseId], references: [id])
 }
