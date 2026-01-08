@@ -103,6 +103,13 @@ export default function MainNav() {
     });
   }
 
+  if (role === "ADMIN") {
+    items.push({
+      href: "/admin",
+      label: "Адмін",
+    });
+  }
+
   return (
     <nav className="flex flex-col gap-1 text-xs">
       <div className="flex flex-wrap items-center gap-2">

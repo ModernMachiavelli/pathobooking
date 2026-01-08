@@ -36,20 +36,20 @@ export default async function MyCasesPage() {
 
   return (
     <div className="space-y-4">
-      <header className="space-y-1">
-        <h1 className="text-xl font-semibold">Мої кейси</h1>
-        <p className="text-xs text-slate-600">
-          Ви увійшли як{" "}
-          <Badge variant="outline" className="align-middle">
-            {role === "ADMIN"
-              ? "Адмін"
-              : role === "DOCTOR"
-              ? "Лікар"
-              : "Пацієнт"}
-          </Badge>
-          . Тут відображаються кейси, створені саме з вашого акаунта.
-        </p>
-      </header>
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold">Мої кейси</h1>
+          <div className="text-xs text-slate-600">
+            Ви увійшли як{" "}
+            <Badge variant="outline" className="align-middle">
+              {role === "ADMIN"
+                ? "Адмін"
+                : role === "DOCTOR"
+                ? "Лікар"
+                : "Пацієнт"}
+            </Badge>
+            . Тут відображаються кейси, створені саме з вашого акаунта.
+          </div>
+        </header>
 
       {cases.length === 0 ? (
         <div className="rounded-md border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
