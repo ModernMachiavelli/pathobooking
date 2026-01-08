@@ -1,0 +1,1 @@
+pnpm dlx prisma@6.19.0 studio --schema=prisma/schema.prisma
