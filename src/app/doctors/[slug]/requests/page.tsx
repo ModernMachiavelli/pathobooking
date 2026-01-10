@@ -5,24 +5,24 @@ import { prisma } from "@/lib/prisma";
 import { getServerAuthSession } from "@/lib/server-auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import RequestStatusActions from "@/components/RequestStatusActions";
+
+export const dynamic = "force-dynamic";
 
 export default async function DoctorRequestsPage(props: {
   params: Promise<{ slug: string }>;
 }) {
-  // У Next 16 params — Promise, тому розпаковуємо його через await
   const { slug } = await props.params;
 
   const session = await getServerAuthSession();
 
   if (!session || !session.user) {
-    // немає сесії → на логін, з поверненням назад в inbox
     redirect(`/login?callbackUrl=/doctors/${slug}/requests`);
   }
 
   const user = session.user as any;
   const role = user.role as string | undefined;
 
-  // завантажуємо лікаря з його запитами
   const doctor = await prisma.doctor.findUnique({
     where: { slug },
     include: {
@@ -45,7 +45,6 @@ export default async function DoctorRequestsPage(props: {
   const isAdmin = role === "ADMIN";
 
   if (!isAdmin && !isOwnerDoctor) {
-    // не адмін і не власник → немає доступу
     redirect("/");
   }
 
@@ -56,12 +55,12 @@ export default async function DoctorRequestsPage(props: {
           <h1 className="text-xl font-semibold">
             Запити до лікаря {doctor.fullName}
           </h1>
-          <p className="text-xs text-slate-600">
+          <div className="text-xs text-slate-600">
             Ви бачите{" "}
             {isAdmin
               ? "усі запити як адміністратор."
               : "запити, які надійшли до вашого профілю."}
-          </p>
+          </div>
         </div>
         <Badge variant="outline">{isAdmin ? "Адмін" : "Лікар"}</Badge>
       </div>
@@ -87,8 +86,9 @@ export default async function DoctorRequestsPage(props: {
                   {req.status}
                 </Badge>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="space-y-3 text-sm">
                 <p className="whitespace-pre-wrap">{req.message}</p>
+
                 {req.patientCase && (
                   <div className="mt-2 text-xs text-slate-600 space-y-1">
                     <div>
@@ -110,6 +110,11 @@ export default async function DoctorRequestsPage(props: {
                     </div>
                   </div>
                 )}
+
+                <RequestStatusActions
+                  requestId={req.id}
+                  currentStatus={req.status as any}
+                />
               </CardContent>
             </Card>
           ))}

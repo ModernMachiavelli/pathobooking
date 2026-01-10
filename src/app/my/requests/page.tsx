@@ -33,7 +33,7 @@ export default async function MyRequestsPage() {
     <div className="space-y-4">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold">Мої запити до лікарів</h1>
-        <p className="text-xs text-slate-600">
+        <div className="text-xs text-slate-600">
           Ви увійшли як{" "}
           <Badge variant="outline" className="align-middle">
             {role === "ADMIN"
@@ -43,7 +43,7 @@ export default async function MyRequestsPage() {
               : "Пацієнт"}
           </Badge>
           . Тут відображаються запити, надіслані з вашого акаунта.
-        </p>
+        </div>
       </header>
 
       {requests.length === 0 ? (
