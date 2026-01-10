@@ -170,6 +170,8 @@ model AppointmentRequest {
   message      String
   status       AppointmentStatus @default(PENDING)
 
+  isReadByDoctor Boolean @default(false)
+
   // прив’язка до User (пацієнт)
   patientUserId String?
   patientUser   User?   @relation("PatientUserAppointmentRequests", fields: [patientUserId], references: [id])

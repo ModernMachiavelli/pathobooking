@@ -14,7 +14,7 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 🔴 ВАЖЛИВО: розпаковуємо params як Promise (Next 16)
+    // Next 16: params — це Promise
     const { id } = await context.params;
 
     if (!id) {

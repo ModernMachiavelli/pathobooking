@@ -9,10 +9,13 @@ import RequestStatusActions from "@/components/RequestStatusActions";
 
 export const dynamic = "force-dynamic";
 
-export default async function DoctorRequestsPage(props: {
-  params: Promise<{ slug: string }>;
+export default async function DoctorRequestsPage({
+  params,
+}: {
+  params: any; // у Next 16 params насправді thenable, не морочимось з типами
 }) {
-  const { slug } = await props.params;
+  // важливо: params тепер треба 'await'
+  const { slug } = await params;
 
   const session = await getServerAuthSession();
 
@@ -23,8 +26,34 @@ export default async function DoctorRequestsPage(props: {
   const user = session.user as any;
   const role = user.role as string | undefined;
 
-  const doctor = await prisma.doctor.findUnique({
+  // базова інформація про лікаря
+  const doctorBase = await prisma.doctor.findUnique({
     where: { slug },
+    select: {
+      id: true,
+      fullName: true,
+      userId: true,
+    },
+  });
+
+  if (!doctorBase) {
+    notFound();
+  }
+
+  const isOwnerDoctor =
+    role === "DOCTOR" &&
+    doctorBase.userId != null &&
+    doctorBase.userId === user.id;
+
+  const isAdmin = role === "ADMIN";
+
+  if (!isAdmin && !isOwnerDoctor) {
+    redirect("/");
+  }
+
+  // вантажимо лікаря з усіма запитами
+  const doctor = await prisma.doctor.findUnique({
+    where: { id: doctorBase.id },
     include: {
       appointmentRequests: {
         orderBy: { createdAt: "desc" },
@@ -37,15 +66,6 @@ export default async function DoctorRequestsPage(props: {
 
   if (!doctor) {
     notFound();
-  }
-
-  const isOwnerDoctor =
-    role === "DOCTOR" && doctor.userId != null && doctor.userId === user.id;
-
-  const isAdmin = role === "ADMIN";
-
-  if (!isAdmin && !isOwnerDoctor) {
-    redirect("/");
   }
 
   return (
@@ -71,53 +91,69 @@ export default async function DoctorRequestsPage(props: {
         </p>
       ) : (
         <div className="space-y-3">
-          {doctor.appointmentRequests.map((req) => (
-            <Card key={req.id}>
-              <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-sm">
-                    Запит від: {req.patientEmail}
-                  </CardTitle>
-                  <p className="text-[11px] text-slate-500">
-                    {new Date(req.createdAt).toLocaleString("uk-UA")}
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-[10px]">
-                  {req.status}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <p className="whitespace-pre-wrap">{req.message}</p>
+          {doctor.appointmentRequests.map((req) => {
+            const isNew = req.status === "PENDING";
 
-                {req.patientCase && (
-                  <div className="mt-2 text-xs text-slate-600 space-y-1">
-                    <div>
-                      <span className="font-semibold">Кейс:</span>{" "}
-                      <Link
-                        href={`/cases/${req.patientCaseId}`}
-                        className="text-blue-600 underline"
-                      >
-                        #{req.patientCaseId.slice(0, 8)}…
-                      </Link>
-                    </div>
-                    <div>
-                      <span className="font-semibold">Орган:</span>{" "}
-                      {req.patientCase.suspectedOrgan || "не вказано"}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Рівень підозри:</span>{" "}
-                      {req.patientCase.suspicionLevel || "не вказано"}
-                    </div>
+            return (
+              <Card
+                key={req.id}
+                className={isNew ? "border-emerald-500 bg-emerald-50/40" : ""}
+              >
+                <CardHeader className="flex flex-row items-center justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-sm">
+                      Запит від: {req.patientEmail}
+                    </CardTitle>
+                    <p className="text-[11px] text-slate-500">
+                      {new Date(req.createdAt).toLocaleString("uk-UA")}
+                    </p>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    {isNew && (
+                      <Badge variant="default" className="text-[10px]">
+                        NEW
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-[10px]">
+                      {req.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <p className="whitespace-pre-wrap">{req.message}</p>
 
-                <RequestStatusActions
-                  requestId={req.id}
-                  currentStatus={req.status as any}
-                />
-              </CardContent>
-            </Card>
-          ))}
+                  {req.patientCase && (
+                    <div className="mt-2 text-xs text-slate-600 space-y-1">
+                      <div>
+                        <span className="font-semibold">Кейс:</span>{" "}
+                        <Link
+                          href={`/cases/${req.patientCaseId}`}
+                          className="text-blue-600 underline"
+                        >
+                          #{req.patientCaseId.slice(0, 8)}…
+                        </Link>
+                      </div>
+                      <div>
+                        <span className="font-semibold">Орган:</span>{" "}
+                        {req.patientCase.suspectedOrgan || "не вказано"}
+                      </div>
+                      <div>
+                        <span className="font-semibold">
+                          Рівень підозри:
+                        </span>{" "}
+                        {req.patientCase.suspicionLevel || "не вказано"}
+                      </div>
+                    </div>
+                  )}
+
+                  <RequestStatusActions
+                    requestId={req.id}
+                    currentStatus={req.status as any}
+                  />
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
