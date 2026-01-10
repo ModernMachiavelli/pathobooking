@@ -1,10 +1,10 @@
-// src/components/MainNav.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { Badge } from "@/components/ui/badge";
 
 type NavItem = {
   href: string;
@@ -16,13 +16,14 @@ export default function MainNav() {
   const { data: session, status } = useSession();
 
   const [doctorSlug, setDoctorSlug] = useState<string | null>(null);
+  const [doctorPendingCount, setDoctorPendingCount] = useState<number>(0);
 
   const role = (session?.user as any)?.role as string | undefined;
   const sessionDoctorSlug = (session?.user as any)?.doctorSlug as
     | string
     | undefined;
 
-  // 🔍 DEBUG — можна прибрати, коли все запрацює
+  // opcional debug
   if (typeof window !== "undefined") {
     console.log(
       "NAV debug:",
@@ -33,32 +34,28 @@ export default function MainNav() {
       "sessionDoctorSlug=",
       sessionDoctorSlug,
       "stateDoctorSlug=",
-      doctorSlug
+      doctorSlug,
+      "pending=",
+      doctorPendingCount
     );
   }
 
-  // Коли сесія готова — підтягуємо doctorSlug, якщо треба
   useEffect(() => {
     if (status !== "authenticated") {
       setDoctorSlug(null);
+      setDoctorPendingCount(0);
       return;
     }
 
     if (role !== "DOCTOR") {
       setDoctorSlug(null);
+      setDoctorPendingCount(0);
       return;
     }
 
-    // Якщо slug вже є в сесії (з auth.ts) — використовуємо його
-    if (sessionDoctorSlug) {
-      setDoctorSlug(sessionDoctorSlug);
-      return;
-    }
-
-    // Інакше — тягнемо з бекенду
     let cancelled = false;
 
-    (async () => {
+    async function loadDoctorMeta() {
       try {
         const res = await fetch("/api/me/doctor");
         if (!res.ok) {
@@ -66,28 +63,57 @@ export default function MainNav() {
           return;
         }
         const data = await res.json();
-        if (!cancelled && data?.slug) {
+        if (cancelled) return;
+
+        if (data?.slug) {
           setDoctorSlug(data.slug as string);
+        } else if (sessionDoctorSlug) {
+          setDoctorSlug(sessionDoctorSlug);
+        }
+
+        if (typeof data?.pendingCount === "number") {
+          setDoctorPendingCount(data.pendingCount);
+        } else {
+          setDoctorPendingCount(0);
         }
       } catch (err) {
         if (!cancelled) {
           console.error("Error fetching /api/me/doctor", err);
         }
       }
-    })();
+    }
+
+    // перше завантаження
+    loadDoctorMeta();
+
+    // слухач події від інбокса лікаря
+    function handleDoctorRequestsChanged() {
+      loadDoctorMeta();
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener(
+        "pathobooking:doctorRequestsChanged",
+        handleDoctorRequestsChanged
+      );
+    }
 
     return () => {
       cancelled = true;
+      if (typeof window !== "undefined") {
+        window.removeEventListener(
+          "pathobooking:doctorRequestsChanged",
+          handleDoctorRequestsChanged
+        );
+      }
     };
   }, [status, role, sessionDoctorSlug]);
 
-  // Базові пункти меню для всіх
   const items: NavItem[] = [
     { href: "/", label: "Головна" },
     { href: "/doctors", label: "Лікарі" },
   ];
 
-  // Якщо є акаунт (будь-яка роль) — додаємо пацієнтські розділи
   if (session?.user) {
     items.push(
       { href: "/my/cases", label: "Мої кейси" },
@@ -95,7 +121,6 @@ export default function MainNav() {
     );
   }
 
-  // Якщо це лікар і вже знаємо doctorSlug — додаємо посилання на його inbox
   if (role === "DOCTOR" && doctorSlug) {
     items.push({
       href: `/doctors/${doctorSlug}/requests`,
@@ -118,6 +143,11 @@ export default function MainNav() {
             pathname === item.href ||
             (item.href !== "/" && pathname.startsWith(item.href));
 
+          const isInboxLink =
+            role === "DOCTOR" &&
+            doctorSlug &&
+            item.href === `/doctors/${doctorSlug}/requests`;
+
           return (
             <Link
               key={item.href}
@@ -131,15 +161,23 @@ export default function MainNav() {
               ].join(" ")}
             >
               {item.label}
+              {isInboxLink && doctorPendingCount > 0 && (
+                <Badge
+                  variant="default"
+                  className="ml-1 text-[10px] px-1.5 py-0"
+                >
+                  {doctorPendingCount}
+                </Badge>
+              )}
             </Link>
           );
         })}
       </div>
-      {/* Можеш прибрати цей debug-блок пізніше */}
       {role === "DOCTOR" && (
         <span className="text-[10px] text-slate-400">
           debug: role={role ?? "null"}; doctorSlug=
-          {doctorSlug ?? sessionDoctorSlug ?? "null"}
+          {doctorSlug ?? sessionDoctorSlug ?? "null"}; pending=
+          {doctorPendingCount}
         </span>
       )}
     </nav>

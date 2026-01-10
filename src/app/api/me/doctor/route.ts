@@ -1,16 +1,19 @@
 // src/app/api/me/doctor/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const session = await getServerAuthSession();
 
   if (!session || !session.user) {
-    return NextResponse.json({ error: "Неавторизовано" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Необхідна авторизація" },
+      { status: 401 }
+    );
   }
 
   const user = session.user as any;
@@ -33,10 +36,22 @@ export async function GET(_req: NextRequest) {
 
   if (!doctor) {
     return NextResponse.json(
-      { error: "Для цього користувача не знайдено профіль лікаря" },
+      { error: "Профіль лікаря не знайдено" },
       { status: 404 }
     );
   }
 
-  return NextResponse.json(doctor);
+  const pendingCount = await prisma.appointmentRequest.count({
+    where: {
+      doctorId: doctor.id,
+      status: "PENDING",
+    },
+  });
+
+  return NextResponse.json({
+    id: doctor.id,
+    slug: doctor.slug,
+    fullName: doctor.fullName,
+    pendingCount,
+  });
 }

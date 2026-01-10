@@ -1,4 +1,3 @@
-// src/components/RequestStatusActions.tsx
 "use client";
 
 import { useState, useTransition } from "react";
@@ -52,7 +51,6 @@ export default function RequestStatusActions({
           body: JSON.stringify({ status: next }),
         });
 
-        // 🔍 Лог у консоль, щоб бачити, що приходить з бекенду
         console.log("PATCH status:", res.status, res.statusText);
 
         if (!res.ok) {
@@ -63,13 +61,21 @@ export default function RequestStatusActions({
             const data = JSON.parse(txt);
             if (data?.error) message = data.error + ` (HTTP ${res.status})`;
           } catch {
-            // якщо не JSON — просто показуємо статус
+            // не JSON – лишаємо дефолтне повідомлення
           }
           setError(message);
           return;
         }
 
         setLocalStatus(next);
+
+        // 🔔 повідомляємо, що кількість PENDING-запитів могла змінитися
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new Event("pathobooking:doctorRequestsChanged")
+          );
+        }
+
         router.refresh();
       } catch (e: any) {
         setError(e?.message || "Помилка оновлення статусу");
