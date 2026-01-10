@@ -3,7 +3,13 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getServerAuthSession } from "@/lib/server-auth";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -79,6 +85,11 @@ export default async function MyRequestsPage() {
               statusColor = "default";
             }
 
+            const hasDoctorReply = !!r.doctorReply;
+            const doctorReplyDate =
+              r.doctorReplyCreatedAt &&
+              new Date(r.doctorReplyCreatedAt).toLocaleString("uk-UA");
+
             return (
               <Card key={r.id}>
                 <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
@@ -96,12 +107,31 @@ export default async function MyRequestsPage() {
                     <Badge variant="outline">
                       Кейс #{caseId.slice(0, 8)}…
                     </Badge>
+                    {hasDoctorReply && (
+                      <Badge variant="default">Є відповідь</Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <p className="whitespace-pre-wrap text-xs text-slate-700">
                     {r.message}
                   </p>
+
+                  {hasDoctorReply && (
+                    <div className="mt-1 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs">
+                      <div className="mb-1 font-semibold text-emerald-900">
+                        Відповідь лікаря
+                      </div>
+                      {doctorReplyDate && (
+                        <div className="mb-1 text-[10px] text-emerald-800">
+                          Дата відповіді: {doctorReplyDate}
+                        </div>
+                      )}
+                      <p className="whitespace-pre-wrap text-emerald-900">
+                        {r.doctorReply}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap gap-2 pt-2 text-xs">
                     <Link href={`/cases/${caseId}`}>
@@ -111,9 +141,7 @@ export default async function MyRequestsPage() {
                     </Link>
 
                     {doctorSlug && (
-                      <Link
-                        href={`/doctors/${doctorSlug}?caseId=${caseId}`}
-                      >
+                      <Link href={`/doctors/${doctorSlug}?caseId=${caseId}`}>
                         <Button variant="outline" size="sm">
                           Перейти до профілю лікаря
                         </Button>

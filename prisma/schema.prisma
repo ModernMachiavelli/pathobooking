@@ -172,6 +172,9 @@ model AppointmentRequest {
 
   isReadByDoctor Boolean @default(false)
 
+  doctorReply          String?   // текст відповіді лікаря
+  doctorReplyCreatedAt DateTime? // коли лікар відповів
+
   // прив’язка до User (пацієнт)
   patientUserId String?
   patientUser   User?   @relation("PatientUserAppointmentRequests", fields: [patientUserId], references: [id])

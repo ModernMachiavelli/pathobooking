@@ -6,6 +6,7 @@ import { getServerAuthSession } from "@/lib/server-auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import RequestStatusActions from "@/components/RequestStatusActions";
+import DoctorReplyEditor from "@/components/DoctorReplyEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -138,9 +139,7 @@ export default async function DoctorRequestsPage({
                         {req.patientCase.suspectedOrgan || "не вказано"}
                       </div>
                       <div>
-                        <span className="font-semibold">
-                          Рівень підозри:
-                        </span>{" "}
+                        <span className="font-semibold">Рівень підозри:</span>{" "}
                         {req.patientCase.suspicionLevel || "не вказано"}
                       </div>
                     </div>
@@ -150,7 +149,19 @@ export default async function DoctorRequestsPage({
                     requestId={req.id}
                     currentStatus={req.status as any}
                   />
+
+                  {/* 🔽 блок для відповіді лікаря */}
+                  <DoctorReplyEditor
+                    requestId={req.id}
+                    initialReply={req.doctorReply as string | null}
+                    repliedAt={
+                      req.doctorReplyCreatedAt
+                        ? (req.doctorReplyCreatedAt as any as string)
+                        : null
+                    }
+                  />
                 </CardContent>
+
               </Card>
             );
           })}
